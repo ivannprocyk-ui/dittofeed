@@ -1,4 +1,4 @@
-version: "3.9"
+ version: "3.9"
   x-database-credentials: &database-credentials
     DATABASE_USER: ${DATABASE_USER:-postgres}
     DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
@@ -38,8 +38,6 @@ version: "3.9"
       environment:
         <<: *backend-app-env
         BOOTSTRAP: "true"
-      env_file:
-        - .env
       networks:
         - dittofeed-network-lite
     temporal:
@@ -56,8 +54,6 @@ version: "3.9"
         - POSTGRES_PWD=${DATABASE_PASSWORD:-password}
         - POSTGRES_SEEDS=${DATABASE_HOST:-postgres}
         - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/prod.yaml
-      env_file:
-        - .env
       image: temporalio/auto-setup:${TEMPORAL_VERSION:-1.22.4}
       labels:
         kompose.volume.type: configMap
