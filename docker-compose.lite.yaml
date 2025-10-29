@@ -42,9 +42,10 @@ services:
     # README: To add local env variables uncomment the following line and add a .env file in the root directory
     # env_file:
     #   - .env
-    networks:
-      - dittofeed-network-lite
+    ##networks:
+      #-# dittofeed-network-lite
 
   admin-cli:
     image: dittofeed/dittofeed-admin-cli:${IMAGE_TAG:-v0.22.0}
     entrypoint:  null
+# 
