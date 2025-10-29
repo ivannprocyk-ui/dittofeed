@@ -1,0 +1,79 @@
+version: "3.9"
+  x-database-credentials: &database-credentials
+    DATABASE_USER: ${DATABASE_USER:-postgres}
+    DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
+  x-clickhouse-credentials: &clickhouse-credentials
+    CLICKHOUSE_USER: ${CLICKHOUSE_USER:-dittofeed}
+    CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-password}
+  x-backend-app-env: &backend-app-env
+    <<: [*clickhouse-credentials, *database-credentials]
+    NODE_ENV: production
+    DATABASE_HOST: ${DATABASE_HOST:-postgres}
+    DATABASE_PORT: ${DATABASE_PORT:-5432}
+    CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-http://clickhouse-server:8123}
+    TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+    WORKSPACE_NAME: ${WORKSPACE_NAME:-Default}
+    AUTH_MODE: ${AUTH_MODE:-single-tenant}
+    SECRET_KEY: ${SECRET_KEY:-GEGL1RHjFVOxIO80Dp8+ODlZPOjm2IDBJB/UunHlf3c=}
+    PASSWORD: ${PASSWORD:-password}
+    DASHBOARD_API_BASE: ${DASHBOARD_API_BASE:-http://localhost:3000}
+  services:
+    lite:
+      image: dittofeed/dittofeed-lite:v0.22.0
+      restart: always
+      command: node --max-old-space-size=824 ./packages/lite/dist/scripts/startLite.js --workspace-name=Default
+      depends_on:
+        - postgres
+        - temporal
+        - clickhouse-server
+      environment:
+        <<: *backend-app-env
+        BOOTSTRAP: "true"
+      networks:
+        - dittofeed-network-lite
+    temporal:
+      image: temporalio/auto-setup:1.22.4
+      container_name: temporal
+      restart: always
+      depends_on:
+        - postgres
+      environment:
+        - DB=postgresql
+        - DB_PORT=5432
+        - POSTGRES_USER=${DATABASE_USER:-postgres}
+        - POSTGRES_PWD=${DATABASE_PASSWORD:-password}
+        - POSTGRES_SEEDS=postgres
+        - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/prod.yaml
+      networks:
+        - dittofeed-network-lite
+      volumes:
+        - ./packages/backend-lib/temporal-dynamicconfig:/etc/temporal/config/dynamicconfig
+    postgres:
+      image: postgres:15
+      restart: always
+      environment:
+        - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-password}
+        - POSTGRES_USER=${DATABASE_USER:-postgres}
+        - POSTGRES_DB=dittofeed
+      volumes:
+        - postgres:/var/lib/postgresql/data
+      networks:
+        - dittofeed-network-lite
+    clickhouse-server:
+      image: clickhouse/clickhouse-server:24.12.6.70-alpine
+      restart: always
+      environment:
+        <<: *clickhouse-credentials
+      volumes:
+        - clickhouse_lib:/var/lib/clickhouse
+        - clickhouse_log:/var/log/clickhouse-server
+      networks:
+        - dittofeed-network-lite
+  volumes:
+    postgres:
+    clickhouse_lib:
+    clickhouse_log:
+  networks:
+    dittofeed-network-lite:
+      driver: bridge
+      name: dittofeed-network-lite
