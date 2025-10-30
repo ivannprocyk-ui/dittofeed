@@ -17,11 +17,12 @@ version: "3.9"
     SECRET_KEY: ${SECRET_KEY:-GEGL1RHjFVOxIO80Dp8+ODlZPOjm2IDBJB/UunHlf3c=}
     PASSWORD: ${PASSWORD:-password}
     DASHBOARD_API_BASE: ${DASHBOARD_API_BASE:-http://localhost:3000}
+
   services:
     lite:
-      image: dittofeed/dittofeed-lite:v0.22.0
+      image: ${IMAGE_REPOSITORY:-dittofeed/dittofeed-lite}:${IMAGE_TAG:-v0.22.0}
       restart: always
-      command: node --max-old-space-size=824 ./packages/lite/dist/scripts/startLite.js --workspace-name=Default
+      command: node --max-old-space-size=${LITE_MEM_LIMIT:-824} ./packages/lite/dist/scripts/startLite.js --workspace-name=${WORKSPACE_NAME:-Default}
       depends_on:
         - postgres
         - temporal
@@ -31,22 +32,24 @@ version: "3.9"
         BOOTSTRAP: "true"
       networks:
         - dittofeed-network-lite
+
     temporal:
-      image: temporalio/auto-setup:1.22.4
       container_name: temporal
       restart: always
       depends_on:
         - postgres
       environment:
         - DB=postgresql
-        - DB_PORT=5432
+        - DB_PORT=${DATABASE_PORT:-5432}
         - POSTGRES_USER=${DATABASE_USER:-postgres}
         - POSTGRES_PWD=${DATABASE_PASSWORD:-password}
-        - POSTGRES_SEEDS=postgres
+        - POSTGRES_SEEDS=${DATABASE_HOST:-postgres}
+      image: temporalio/auto-setup:${TEMPORAL_VERSION:-1.22.4}
       networks:
         - dittofeed-network-lite
+
     postgres:
-      image: postgres:15
+      image: postgres:${POSTGRES_VERSION:-15}
       restart: always
       environment:
         - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-password}
@@ -56,6 +59,7 @@ version: "3.9"
         - postgres:/var/lib/postgresql/data
       networks:
         - dittofeed-network-lite
+
     clickhouse-server:
       image: clickhouse/clickhouse-server:24.12.6.70-alpine
       restart: always
@@ -66,10 +70,12 @@ version: "3.9"
         - clickhouse_log:/var/log/clickhouse-server
       networks:
         - dittofeed-network-lite
+
   volumes:
     postgres:
     clickhouse_lib:
     clickhouse_log:
+
   networks:
     dittofeed-network-lite:
       driver: bridge
