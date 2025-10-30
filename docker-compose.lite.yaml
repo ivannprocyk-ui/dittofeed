@@ -1,11 +1,11 @@
 version: "3.9"
-  x-database-credentials: &database-credentials
+x-database-credentials: &database-credentials
     DATABASE_USER: ${DATABASE_USER:-postgres}
     DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
-  x-clickhouse-credentials: &clickhouse-credentials
+x-clickhouse-credentials: &clickhouse-credentials
     CLICKHOUSE_USER: ${CLICKHOUSE_USER:-dittofeed}
     CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-password}
-  x-backend-app-env: &backend-app-env
+x-backend-app-env: &backend-app-env
     <<: [*clickhouse-credentials, *database-credentials]
     NODE_ENV: production
     DATABASE_HOST: ${DATABASE_HOST:-postgres}
@@ -18,7 +18,7 @@ version: "3.9"
     PASSWORD: ${PASSWORD:-password}
     DASHBOARD_API_BASE: ${DASHBOARD_API_BASE:-http://localhost:3000}
 
-  services:
+ services:
     lite:
       image: ${IMAGE_REPOSITORY:-dittofeed/dittofeed-lite}:${IMAGE_TAG:-v0.22.0}
       restart: always
@@ -71,12 +71,12 @@ version: "3.9"
       networks:
         - dittofeed-network-lite
 
-  volumes:
+volumes:
     postgres:
     clickhouse_lib:
     clickhouse_log:
 
-  networks:
+networks:
     dittofeed-network-lite:
       driver: bridge
       name: dittofeed-network-lite
