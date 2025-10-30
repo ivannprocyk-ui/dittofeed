@@ -17,12 +17,17 @@ x-backend-app-env: &backend-app-env
     SECRET_KEY: ${SECRET_KEY:-GEGL1RHjFVOxIO80Dp8+ODlZPOjm2IDBJB/UunHlf3c=}
     PASSWORD: ${PASSWORD:-password}
     DASHBOARD_API_BASE: ${DASHBOARD_API_BASE:-http://localhost:3000}
-
- services:
+services:
     lite:
       image: ${IMAGE_REPOSITORY:-dittofeed/dittofeed-lite}:${IMAGE_TAG:-v0.22.0}
       restart: always
       command: node --max-old-space-size=${LITE_MEM_LIMIT:-824} ./packages/lite/dist/scripts/startLite.js --workspace-name=${WORKSPACE_NAME:-Default}
+      logging:
+        driver: "local"
+      deploy:
+        resources:
+          limits:
+            memory: ${LITE_CONTAINER_MEM_LIMIT:-1024}m
       depends_on:
         - postgres
         - temporal
@@ -30,12 +35,15 @@ x-backend-app-env: &backend-app-env
       environment:
         <<: *backend-app-env
         BOOTSTRAP: "true"
+      env_file:
+        - .env
       networks:
         - dittofeed-network-lite
-
     temporal:
       container_name: temporal
       restart: always
+      logging:
+        driver: "local"
       depends_on:
         - postgres
       environment:
@@ -44,13 +52,19 @@ x-backend-app-env: &backend-app-env
         - POSTGRES_USER=${DATABASE_USER:-postgres}
         - POSTGRES_PWD=${DATABASE_PASSWORD:-password}
         - POSTGRES_SEEDS=${DATABASE_HOST:-postgres}
+        - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/docker.yaml
+      env_file:
+        - .env
       image: temporalio/auto-setup:${TEMPORAL_VERSION:-1.22.4}
+      labels:
+        kompose.volume.type: configMap
       networks:
         - dittofeed-network-lite
-
     postgres:
       image: postgres:${POSTGRES_VERSION:-15}
       restart: always
+      logging:
+        driver: "local"
       environment:
         - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-password}
         - POSTGRES_USER=${DATABASE_USER:-postgres}
@@ -59,10 +73,15 @@ x-backend-app-env: &backend-app-env
         - postgres:/var/lib/postgresql/data
       networks:
         - dittofeed-network-lite
-
     clickhouse-server:
       image: clickhouse/clickhouse-server:24.12.6.70-alpine
       restart: always
+      logging:
+        driver: "local"
+      deploy:
+        resources:
+          limits:
+            memory: ${CLICKHOUSE_CONTAINER_MEM_LIMIT:-2048}m
       environment:
         <<: *clickhouse-credentials
       volumes:
@@ -70,12 +89,10 @@ x-backend-app-env: &backend-app-env
         - clickhouse_log:/var/log/clickhouse-server
       networks:
         - dittofeed-network-lite
-
 volumes:
     postgres:
     clickhouse_lib:
     clickhouse_log:
-
 networks:
     dittofeed-network-lite:
       driver: bridge
