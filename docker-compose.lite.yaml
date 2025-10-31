@@ -41,7 +41,6 @@ services:
     #   - .env
     networks:
       - dittofeed-network-lite
-  # useful for upgrading dittofeed
   temporal:
     container_name: temporal
     restart: always
