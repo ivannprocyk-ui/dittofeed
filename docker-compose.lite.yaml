@@ -92,7 +92,6 @@ services:
       - clickhouse_log:/var/log/clickhouse-server
     networks:
       - dittofeed-network-lite
-  # Note that minio is only used for local development. In production, use any S3-compatible storage.
 volumes:
   postgres:
   clickhouse_lib:
